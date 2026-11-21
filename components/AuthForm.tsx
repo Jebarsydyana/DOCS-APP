@@ -4,6 +4,9 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { appName } from "@/lib/config";
 
 export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
   const router = useRouter();
@@ -49,37 +52,43 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
     router.refresh();
   }
 
-  const input = "w-full rounded border border-gray-300 px-3 py-2 text-sm";
-
   return (
-    <main className="mx-auto mt-24 w-full max-w-sm px-4">
-      <h1 className="mb-6 text-2xl font-semibold">{isSignup ? "Create account" : "Log in"}</h1>
-      <form onSubmit={onSubmit} className="space-y-3">
-        {isSignup && <input name="name" placeholder="Name (optional)" className={input} />}
-        <input name="email" type="email" required placeholder="Email" autoComplete="email" className={input} />
-        <input
-          name="password"
-          type="password"
-          required
-          placeholder="Password"
-          autoComplete={isSignup ? "new-password" : "current-password"}
-          className={input}
-        />
-        {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
-        <button
-          type="submit"
-          disabled={busy}
-          className="w-full rounded bg-black px-3 py-2 text-sm text-white disabled:opacity-50"
-        >
-          {busy ? "Please wait…" : isSignup ? "Sign up" : "Log in"}
-        </button>
-      </form>
-      <p className="mt-4 text-sm text-gray-600">
-        {isSignup ? "Already have an account? " : "No account? "}
-        <Link href={isSignup ? "/login" : "/signup"} className="underline">
-          {isSignup ? "Log in" : "Sign up"}
-        </Link>
-      </p>
+    <main className="flex min-h-dvh items-center justify-center px-4 py-12">
+      <div className="w-full max-w-sm">
+        <p className="mb-6 text-center text-lg font-semibold tracking-tight">{appName}</p>
+
+        <div className="rounded-lg border border-border bg-surface p-6 shadow-sm">
+          <h1 className="mb-5 text-xl font-semibold">{isSignup ? "Create your account" : "Log in"}</h1>
+
+          <form onSubmit={onSubmit} className="space-y-4">
+            {isSignup && <Input name="name" label="Name (optional)" autoComplete="name" />}
+            <Input name="email" type="email" label="Email" required autoComplete="email" />
+            <Input
+              name="password"
+              type="password"
+              label="Password"
+              required
+              minLength={isSignup ? 8 : undefined}
+              autoComplete={isSignup ? "new-password" : "current-password"}
+            />
+            {error && (
+              <p role="alert" className="text-sm text-danger">
+                {error}
+              </p>
+            )}
+            <Button type="submit" loading={busy} className="w-full">
+              {isSignup ? "Sign up" : "Log in"}
+            </Button>
+          </form>
+        </div>
+
+        <p className="mt-4 text-center text-sm text-muted">
+          {isSignup ? "Already have an account? " : "No account? "}
+          <Link href={isSignup ? "/login" : "/signup"} className="font-medium text-primary hover:underline">
+            {isSignup ? "Log in" : "Sign up"}
+          </Link>
+        </p>
+      </div>
     </main>
   );
 }

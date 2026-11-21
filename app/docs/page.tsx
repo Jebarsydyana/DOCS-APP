@@ -1,30 +1,44 @@
 import { redirect } from "next/navigation";
-import { auth, signOut } from "@/auth";
+import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
+import DocsToolbar from "@/components/documents/DocsToolbar";
+import DocumentRows, { type DocRow } from "@/components/documents/DocumentRows";
 
-export default async function DocsPage() {
+export const metadata = { title: "My documents" };
+
+export default async function MyDocumentsPage() {
   const session = await auth();
-  if (!session?.user) redirect("/login");
+  if (!session?.user?.id) redirect("/login");
 
-  const count = await prisma.document.count({ where: { ownerId: session.user.id } });
+  const docs = await prisma.document.findMany({
+    where: { ownerId: session.user.id },
+    orderBy: { updatedAt: "desc" },
+    select: { id: true, title: true, updatedAt: true, _count: { select: { shares: true } } },
+  });
+
+  const rows: DocRow[] = docs.map((d) => ({
+    id: d.id,
+    title: d.title,
+    updatedAt: d.updatedAt.toISOString(),
+    role: "OWNER",
+    sharedCount: d._count.shares,
+  }));
 
   return (
-    <main className="mx-auto mt-16 max-w-2xl px-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">My documents</h1>
-        <form
-          action={async () => {
-            "use server";
-            await signOut({ redirectTo: "/login" });
-          }}
-        >
-          <button className="rounded border px-3 py-1 text-sm">Log out</button>
-        </form>
+    <div className="mx-auto w-full max-w-3xl px-6 py-8">
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold">My documents</h1>
+          <p className="mt-1 text-sm text-gray-500">Documents you own. Share them, or import .txt, .md and .docx files.</p>
+        </div>
+        <DocsToolbar />
       </div>
-      <p className="mt-2 text-sm text-gray-600">Signed in as {session.user.email}</p>
-      <p className="mt-8 text-gray-500">
-        {count === 0 ? "No documents yet. (Phase 2 adds creation.)" : `${count} document(s)`}
-      </p>
-    </main>
+
+      <DocumentRows
+        rows={rows}
+        emptyTitle="You don't have any documents yet"
+        emptyHint="Create a blank document, or import a .txt, .md or .docx file to start from existing text."
+      />
+    </div>
   );
 }
